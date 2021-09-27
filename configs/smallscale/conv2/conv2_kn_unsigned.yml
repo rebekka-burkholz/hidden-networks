@@ -2,7 +2,7 @@
 arch: Conv2
 
 # ===== Dataset ===== #
-data: /mnt
+data: /home/rebekka/Documents/GitHub/data
 set: CIFAR10
 name: conv2_kn_unsigned
 
@@ -21,7 +21,7 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-prune_rate: -1
+prune_rate: 0.5
 init: kaiming_normal
 scale_fan: True
 

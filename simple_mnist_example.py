@@ -33,7 +33,19 @@ class GetSubnet(autograd.Function):
     def backward(ctx, g):
         # send the gradient g straight-through on the backward pass.
         return g, None
-
+#def percentile(t, q):
+#    k = 1 + round(.01 * float(q) * (t.numel() - 1))
+#    return t.view(-1).kthvalue(k).values.item()
+#    
+#class GetSubnet(torch.autograd.Function):
+#    @staticmethod
+#    def forward(ctx, scores, zeros, ones, sparsity):
+#        k_val = percentile(scores, sparsity*100)
+#        return torch.where(scores < k_val, zeros.to(scores.device), ones.to(scores.device))
+#
+#    @staticmethod
+#    def backward(ctx, g):
+#        return g, None, None, None
 
 class SupermaskConv(nn.Conv2d):
     def __init__(self, *args, **kwargs):

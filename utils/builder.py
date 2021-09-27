@@ -27,11 +27,12 @@ class Builder(object):
                 kernel_size=3,
                 stride=stride,
                 padding=1,
-                bias=False,
+                #bias=False,
+                bias=True
             )
         elif kernel_size == 1:
             conv = conv_layer(
-                in_planes, out_planes, kernel_size=1, stride=stride, bias=False
+                in_planes, out_planes, kernel_size=1, stride=stride, bias=True #bias=False
             )
         elif kernel_size == 5:
             conv = conv_layer(
@@ -40,7 +41,8 @@ class Builder(object):
                 kernel_size=5,
                 stride=stride,
                 padding=2,
-                bias=False,
+                #bias=False,
+                bias=True
             )
         elif kernel_size == 7:
             conv = conv_layer(
@@ -49,7 +51,8 @@ class Builder(object):
                 kernel_size=7,
                 stride=stride,
                 padding=3,
-                bias=False,
+                #bias=False,
+                bias=True
             )
         else:
             return None
@@ -114,13 +117,30 @@ class Builder(object):
                 fan = fan * (1 - args.prune_rate)
                 gain = nn.init.calculate_gain(args.nonlinearity)
                 std = gain / math.sqrt(fan)
-                with torch.no_grad():
-                    conv.weight.data.normal_(0, std)
+                nn.init.normal_(conv.weight, mean=0.0, std=std)
+                nn.init.normal_(conv.bias, mean=0.0, std=std)
+                #with torch.no_grad():
+                #    conv.weight.data.normal_(0, std)
             else:
                 nn.init.kaiming_normal_(
                     conv.weight, mode=args.mode, nonlinearity=args.nonlinearity
-                )
-
+                    )
+       #         
+       #elif args.init == "kaiming_normal_bias":
+           #if args.scale_fan:
+               #fan = nn.init._calculate_correct_fan(conv.weight, args.mode)
+               #fan = fan * (1 - args.prune_rate)
+               #gain = nn.init.calculate_gain(args.nonlinearity)
+               #std = gain / math.sqrt(fan)
+               #with torch.no_grad():
+                   #conv.weight.data.normal_(0, std)
+                   #conv.bias.data.normal_(0, std)
+           #else:
+               #nn.init.kaiming_normal_(
+                   #conv.weight, mode=args.mode, nonlinearity=args.nonlinearity
+               #)
+               #nn.init.normal_(conv.bias, mean=0.0, std=std)
+               
         elif args.init == "kaiming_uniform":
             nn.init.kaiming_uniform_(
                 conv.weight, mode=args.mode, nonlinearity=args.nonlinearity

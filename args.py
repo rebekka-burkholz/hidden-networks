@@ -12,7 +12,7 @@ def parse_arguments():
 
     # General Config
     parser.add_argument(
-        "--data", help="path to dataset base directory", default="/mnt/disk1/datasets"
+        "--data", help="path to dataset base directory", default="/home/rebekka/Documents/GitHub/data"
     )
     parser.add_argument("--optimizer", help="Which optimizer to use", default="sgd")
     parser.add_argument("--set", help="name of dataset", type=str, default="ImageNet")
@@ -183,6 +183,9 @@ def parse_arguments():
     parser.add_argument("--bn-type", default=None, help="BatchNorm type")
     parser.add_argument(
         "--init", default="kaiming_normal", help="Weight initialization modifications"
+    )
+    parser.add_argument(
+        "--initBias", default="zero-bias", help="Bias initialization modifications"
     )
     parser.add_argument(
         "--no-bn-decay", action="store_true", default=False, help="No batchnorm decay"

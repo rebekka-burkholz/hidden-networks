@@ -160,6 +160,29 @@ class FC(nn.Module):
         out = x.view(x.size(0), 28 * 28, 1, 1)
         out = self.linear(out)
         return out.squeeze()
+    
+class FCDEEP(nn.Module):
+    def __init__(self):
+        super(FCDEEP, self).__init__()
+        builder = get_builder()
+        self.linear = nn.Sequential(
+            builder.conv1x1(28 * 28, 300, first_layer=True),
+            nn.ReLU(),
+            builder.conv1x1(300, 300),
+            nn.ReLU(),
+            builder.conv1x1(300, 300),
+            nn.ReLU(),
+            builder.conv1x1(300, 300),
+            nn.ReLU(),
+            builder.conv1x1(300, 100),
+            nn.ReLU(),
+            builder.conv1x1(100, 10),
+        )
+
+    def forward(self, x):
+        out = x.view(x.size(0), 28 * 28, 1, 1)
+        out = self.linear(out)
+        return out.squeeze()
 
 def scale(n):
     return int(n * args.width_mult)

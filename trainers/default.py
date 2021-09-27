@@ -40,7 +40,17 @@ def train(train_loader, model, criterion, optimizer, epoch, args, writer):
 
         # compute output
         output = model(images)
-
+        #rescale target to fit output range
+        #rescale(output, target)
+        #print("output shape")
+        #print(output.shape)
+        #print(target.shape)
+        #print(output[:2,:])
+        #print(target[:2])
+        use_cuda = torch.cuda.is_available()
+        if use_cuda:
+            output = output.cuda()
+            target = target.cuda()
         loss = criterion(output, target)
 
         # measure accuracy and record loss
@@ -90,7 +100,10 @@ def validate(val_loader, model, criterion, args, writer, epoch):
 
             # compute output
             output = model(images)
-
+            use_cuda = torch.cuda.is_available()
+            if use_cuda:
+                output = output.cuda()
+                target = target.cuda()
             loss = criterion(output, target)
 
             # measure accuracy and record loss

@@ -2,6 +2,7 @@ import os
 import pathlib
 import random
 import time
+import math
 
 from torch.utils.tensorboard import SummaryWriter
 import torch
@@ -53,11 +54,29 @@ def main_worker(args):
 
     # create model and optimizer
     model = get_model(args)
+    
     model = set_gpu(args, model)
 
     if args.pretrained:
         pretrained(args, model)
+        
+    #init_with_bias(args, model)
+    #print(args.initBias)
+    if args.initBias == "kaiming-normal":
+        init_with_bias(args, model)
+    if args.initBias == "ortho":
+        #print("works")
+        init_with_bias_ortho(args, model)
+    if args.initBias == "zero-bias":
+        init_zero_bias(args, model)
+    if args.initBias == "ortho-bias":
+        init_ortho_with_dep_bias(args, model)
+    if args.initBias == "ortho-zero-bias":
+        init_ortho_with_zero_bias(args, model)
 
+    if args.freeze_weights:
+        freeze_model_weights(model)
+    
     optimizer = get_optimizer(args, model)
     data = get_dataset(args)
     lr_policy = get_policy(args.lr_policy)(optimizer, args)
@@ -208,6 +227,7 @@ def main_worker(args):
         curr_acc5=acc5,
         base_config=args.config,
         name=args.name,
+        initBias=args.initBias
     )
 
 
@@ -289,6 +309,164 @@ def pretrained(args, model):
         if isinstance(m, FixedSubnetConv):
             m.set_subnet()
 
+def init_with_bias(args, model):
+    gainProd = 0.06 #0.07 #0.06 #0.09 #0.1 #0.03 #0.1 #1.0 #0.5
+    for m in model.modules():
+        if isinstance(m,(nn.Conv2d, nn.Linear)):
+            fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(m.weight)
+            std = math.sqrt(2/fan_in)
+            if args.scale_fan:
+                std = std / math.sqrt(args.prune_rate) #math.sqrt(1-args.prune_rate) #* (1 - args.prune_rate) #/ math.sqrt(args.prune_rate) #(1 - args.prune_rate)
+            nn.init.normal_(m.weight, mean=0.0, std=std)
+            gainProd = gainProd*std
+            if m.bias is not None:
+                nn.init.normal_(m.bias, mean=0.0, std=gainProd)
+    for n, m in model.named_modules():
+        if isinstance(m, FixedSubnetConv):
+            m.set_subnet()
+            
+def init_zero_bias(args, model):
+    gainProd = 0.06 #0.07 #0.06 #0.09 #0.1 #0.03 #0.1 #1.0 #0.5
+    for m in model.modules():
+        if isinstance(m,(nn.Conv2d, nn.Linear)):
+            fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(m.weight)
+            std = math.sqrt(2/fan_in)
+            if args.scale_fan:
+                std = std / math.sqrt(args.prune_rate) #math.sqrt(1-args.prune_rate) #* (1 - args.prune_rate) #/ math.sqrt(args.prune_rate) #(1 - args.prune_rate)
+            nn.init.normal_(m.weight, mean=0.0, std=std)
+            gainProd = gainProd*std
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
+    for n, m in model.named_modules():
+        if isinstance(m, FixedSubnetConv):
+            m.set_subnet()
+            
+def init_with_bias_ortho(args, model):
+    gainProd = 0.06
+    i = 0
+    for m in model.modules():
+        if isinstance(m,(nn.Conv2d, nn.Linear)):
+            i=i+1
+            fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(m.weight)
+            std = math.sqrt(2/fan_in)
+            if i==1:
+                #din = fan_in
+                #dout = math.ceil(fan_out/2)
+                dout = math.ceil(m.weight.size()[0]/2)
+                din = m.weight.size()[1]
+                #dbias = math.ceil(m.bias.size()/2) 
+                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                ww = torch.cat((ww,-ww),dim=0)
+                m.weight.data = ww[:m.weight.size()[0],:,:,:]
+            else:
+                din = math.ceil(m.weight.size()[1]/2)
+                dout = math.ceil(m.weight.size()[0]/2)
+                #dbias = math.ceil(m.bias.size()/2)
+                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                ww = torch.cat((ww,-ww),dim=0)
+                ww = torch.cat((ww,-ww),dim=1)
+                m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+            #also identify last layer?
+            if args.scale_fan:
+                std = std / math.sqrt(args.prune_rate)
+            #nn.init.normal_(m.weight, mean=0.0, std=std)
+            #dbias = math.ceil(m.bias.size()/2) 
+            gainProd = gainProd*std
+            if m.bias is not None:
+                bb = torch.empty(dout)
+                nn.init.normal_(bb, mean=0.0, std=gainProd)
+                bb = torch.cat((bb,-bb))
+                m.bias.data = bb
+                #nn.init.normal_(m.bias, mean=0.0, std=gainProd)
+    for n, m in model.named_modules():
+        if isinstance(m, FixedSubnetConv):
+            m.set_subnet()
+
+def init_ortho_with_zero_bias(args, model):
+    gainProd = 0.06
+    i = 0
+    for m in model.modules():
+        if isinstance(m,(nn.Conv2d, nn.Linear)):
+            i=i+1
+            fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(m.weight)
+            std = math.sqrt(2/fan_in)
+            if i==1:
+                #din = fan_in
+                #dout = math.ceil(fan_out/2)
+                dout = math.ceil(m.weight.size()[0]/2)
+                din = m.weight.size()[1]
+                #dbias = math.ceil(m.bias.size()/2) 
+                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                ww = torch.cat((ww,-ww),dim=0)
+                m.weight.data = ww[:m.weight.size()[0],:,:,:]
+            else:
+                din = math.ceil(m.weight.size()[1]/2)
+                dout = math.ceil(m.weight.size()[0]/2)
+                #dbias = math.ceil(m.bias.size()/2)
+                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                ww = torch.cat((ww,-ww),dim=0)
+                ww = torch.cat((ww,-ww),dim=1)
+                m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+            #also identify last layer?
+            if args.scale_fan:
+                std = std / math.sqrt(args.prune_rate)
+                m.weight.data =  m.weight.data / math.sqrt(args.prune_rate)
+            #nn.init.normal_(m.weight, mean=0.0, std=std)
+            #dbias = math.ceil(m.bias.size()/2) 
+            gainProd = gainProd*std
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
+    for n, m in model.named_modules():
+        if isinstance(m, FixedSubnetConv):
+            m.set_subnet()
+
+def init_ortho_with_dep_bias(args, model):
+    gainProd = 0.06
+    i = 0
+    for m in model.modules():
+        if isinstance(m,(nn.Conv2d, nn.Linear)):
+            i=i+1
+            fan_in, fan_out = nn.init._calculate_fan_in_and_fan_out(m.weight)
+            std = math.sqrt(2/fan_in)
+            if i==1:
+                dout = math.ceil(m.weight.size()[0]/2)
+                din = m.weight.size()[1]
+                #dbias = math.ceil(m.bias.size()/2) 
+                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                ww = torch.cat((ww,-ww),dim=0)
+                m.weight.data = ww[:m.weight.size()[0],:,:,:]
+            else:
+                din = math.ceil(m.weight.size()[1]/2)
+                dout = math.ceil(m.weight.size()[0]/2)
+                #dbias = math.ceil(m.bias.size()/2)
+                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                wprev = ww
+                if args.scale_fan:
+                    wprev = wprev / math.sqrt(args.prune_rate)
+                ww = torch.cat((ww,-ww),dim=0)
+                ww = torch.cat((ww,-ww),dim=1)
+                m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+            #also identify last layer?
+            if args.scale_fan:
+                std = std / math.sqrt(args.prune_rate)
+                m.weight.data = m.weight.data / math.sqrt(args.prune_rate)
+            gainProd = gainProd*std
+            if m.bias is not None:
+                bb = torch.empty(dout)
+                nn.init.normal_(bb, mean=0.0, std=gainProd)
+                if i%2 == 1:
+                    bprev = bb
+                    bb = torch.cat((bb,-bb))
+                    m.bias.data = bb[:m.bias.size(0)]
+                else:
+                    scale = 1/math.sqrt(wprev.size(2)*wprev.size(3))
+                    wprev = torch.sum(wprev, dim=(2,3))
+                    bb = torch.matmul(wprev,bprev)*scale
+                    bb = torch.cat((-bb,bb))
+                    m.bias.data = bb[:m.bias.size(0)]
+    for n, m in model.named_modules():
+        if isinstance(m, FixedSubnetConv):
+            m.set_subnet()
 
 def get_dataset(args):
     print(f"=> Getting {args.set} dataset")
@@ -406,6 +584,7 @@ def write_result_to_csv(**kwargs):
         results.write_text(
             "Date Finished, "
             "Base Config, "
+            "Initialization, "
             "Name, "
             "Prune Rate, "
             "Current Val Top 1, "
@@ -423,6 +602,7 @@ def write_result_to_csv(**kwargs):
             (
                 "{now}, "
                 "{base_config}, "
+                "{initBias}, "
                 "{name}, "
                 "{prune_rate}, "
                 "{curr_acc1:.02f}, "

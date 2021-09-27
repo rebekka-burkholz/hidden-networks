@@ -17,7 +17,7 @@ epochs: 100
 weight_decay: 0.000030517578125
 momentum: 0.875
 batch_size: 256
-label_smoothing: 0.1
+label_smoothing: 0.05
 
 # ===== Sparsity =========== #
 conv_type: SubnetConv

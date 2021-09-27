@@ -2,7 +2,7 @@
 arch: FC
 
 # ===== Dataset ===== #
-data: /mnt
+data: /home/rebekka/Documents/GitHub/data #/mnt
 set: MNIST
 name: fc_kn_unsigned
 
@@ -21,9 +21,9 @@ batch_size: 128
 conv_type: SubnetConv
 bn_type: NonAffineBatchNorm
 freeze_weights: True
-prune_rate: -1
+prune_rate: 0.01
 init: kaiming_normal
-scale_fan: True
+scale_fan: False #True
 
 # ===== Hardware setup ===== #
 workers: 4

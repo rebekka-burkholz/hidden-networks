@@ -57,7 +57,12 @@ def freeze_model_subnet(model):
             if m.scores.grad is not None:
                 print(f"==> Setting gradient of {n}.scores to None")
                 m.scores.grad = None
-
+        if hasattr(m, "scoresBias"):
+            m.scoresBias.requires_grad = False
+            print(f"==> No gradient to {n}.scoresBias")
+            if m.scoresBias.grad is not None:
+                print(f"==> Setting gradient of {n}.scoresBias to None")
+                m.scoresBias.grad = None
 
 def unfreeze_model_weights(model):
     print("=> Unfreezing model weights")
@@ -78,7 +83,9 @@ def unfreeze_model_subnet(model):
         if hasattr(m, "scores"):
             print(f"==> Gradient to {n}.scores")
             m.scores.requires_grad = True
-
+        if hasattr(m, "scoresBias"):
+            print(f"==> Gradient to {n}.scoresBias")
+            m.scoresBias.requires_grad = True
 
 def set_model_prune_rate(model, prune_rate):
     print(f"==> Setting prune rate of network to {prune_rate}")
@@ -134,5 +141,6 @@ class SubnetL1RegLoss(nn.Module):
         for n, p in model.named_parameters():
             if n.endswith("scores"):
                 l1_accum += (p*temperature).sigmoid().sum()
-
+            if n.endswith("scoresBias"):
+                l1_accum += (p*temperature).sigmoid().sum()
         return l1_accum
