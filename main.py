@@ -62,14 +62,14 @@ def main_worker(args):
         
     #init_with_bias(args, model)
     #print(args.initBias)
-    if args.initBias == "kaiming-normal":
+    if args.initBias == "kn-nonzero-bias":
         init_with_bias(args, model)
-    if args.initBias == "ortho":
+    if args.initBias == "ortho-nonzero-bias":
         #print("works")
         init_with_bias_ortho(args, model)
-    if args.initBias == "zero-bias":
+    if args.initBias == "kn-zero-bias":
         init_zero_bias(args, model)
-    if args.initBias == "ortho-bias":
+    if args.initBias == "ortho-bias-special":
         init_ortho_with_dep_bias(args, model)
     if args.initBias == "ortho-zero-bias":
         init_ortho_with_zero_bias(args, model)

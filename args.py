@@ -185,7 +185,7 @@ def parse_arguments():
         "--init", default="kaiming_normal", help="Weight initialization modifications"
     )
     parser.add_argument(
-        "--initBias", default="zero-bias", help="Bias initialization modifications"
+        "--initBias", default="kn-zero-bias", help="Bias initialization modifications"
     )
     parser.add_argument(
         "--no-bn-decay", action="store_true", default=False, help="No batchnorm decay"
