@@ -308,6 +308,7 @@ def pretrained(args, model):
     for n, m in model.named_modules():
         if isinstance(m, FixedSubnetConv):
             m.set_subnet()
+            
 
 def init_with_bias(args, model):
     gainProd = 0.06 #0.07 #0.06 #0.09 #0.1 #0.03 #0.1 #1.0 #0.5
@@ -355,17 +356,28 @@ def init_with_bias_ortho(args, model):
                 dout = math.ceil(m.weight.size()[0]/2)
                 din = m.weight.size()[1]
                 #dbias = math.ceil(m.bias.size()/2) 
-                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
-                ww = torch.cat((ww,-ww),dim=0)
-                m.weight.data = ww[:m.weight.size()[0],:,:,:]
+                if isinstance(m,(nn.Conv2d)):
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    m.weight.data = ww[:m.weight.size()[0],:,:,:]
+                else:
+                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    m.weight.data = ww[:m.weight.size()[0],:]
             else:
                 din = math.ceil(m.weight.size()[1]/2)
                 dout = math.ceil(m.weight.size()[0]/2)
                 #dbias = math.ceil(m.bias.size()/2)
-                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
-                ww = torch.cat((ww,-ww),dim=0)
-                ww = torch.cat((ww,-ww),dim=1)
-                m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+                if isinstance(m,(nn.Conv2d)):
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    ww = torch.cat((ww,-ww),dim=1)
+                    m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+                else:
+                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    ww = torch.cat((ww,-ww),dim=1)
+                    m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1]]
             #also identify last layer?
             if args.scale_fan:
                 std = std / math.sqrt(args.prune_rate)
@@ -395,18 +407,29 @@ def init_ortho_with_zero_bias(args, model):
                 #dout = math.ceil(fan_out/2)
                 dout = math.ceil(m.weight.size()[0]/2)
                 din = m.weight.size()[1]
-                #dbias = math.ceil(m.bias.size()/2) 
-                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
-                ww = torch.cat((ww,-ww),dim=0)
-                m.weight.data = ww[:m.weight.size()[0],:,:,:]
+                #dbias = math.ceil(m.bias.size()/2)
+                if isinstance(m,(nn.Conv2d)):
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    m.weight.data = ww[:m.weight.size()[0],:,:,:]
+                else:
+                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    m.weight.data = ww[:m.weight.size()[0],:]
             else:
                 din = math.ceil(m.weight.size()[1]/2)
                 dout = math.ceil(m.weight.size()[0]/2)
                 #dbias = math.ceil(m.bias.size()/2)
-                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
-                ww = torch.cat((ww,-ww),dim=0)
-                ww = torch.cat((ww,-ww),dim=1)
-                m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+                if isinstance(m,(nn.Conv2d)):
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    ww = torch.cat((ww,-ww),dim=1)
+                    m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+                else:
+                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    ww = torch.cat((ww,-ww),dim=1)
+                    m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1]]
             #also identify last layer?
             if args.scale_fan:
                 std = std / math.sqrt(args.prune_rate)
@@ -432,20 +455,32 @@ def init_ortho_with_dep_bias(args, model):
                 dout = math.ceil(m.weight.size()[0]/2)
                 din = m.weight.size()[1]
                 #dbias = math.ceil(m.bias.size()/2) 
-                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
-                ww = torch.cat((ww,-ww),dim=0)
-                m.weight.data = ww[:m.weight.size()[0],:,:,:]
+                if isinstance(m,(nn.Conv2d)):
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    m.weight.data = ww[:m.weight.size()[0],:,:,:]
+                else:
+                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = torch.cat((ww,-ww),dim=0)
+                    m.weight.data = ww[:m.weight.size()[0],:]
             else:
                 din = math.ceil(m.weight.size()[1]/2)
                 dout = math.ceil(m.weight.size()[0]/2)
                 #dbias = math.ceil(m.bias.size()/2)
-                ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
-                wprev = ww
+                if isinstance(m,(nn.Conv2d)):
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    wprev = ww
+                else:
+                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    wprev = ww
                 if args.scale_fan:
                     wprev = wprev / math.sqrt(args.prune_rate)
                 ww = torch.cat((ww,-ww),dim=0)
                 ww = torch.cat((ww,-ww),dim=1)
-                m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+                if isinstance(m,(nn.Conv2d)):
+                    m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
+                else:
+                    m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1]]
             #also identify last layer?
             if args.scale_fan:
                 std = std / math.sqrt(args.prune_rate)
