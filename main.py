@@ -357,11 +357,11 @@ def init_with_bias_ortho(args, model):
                 din = m.weight.size()[1]
                 #dbias = math.ceil(m.bias.size()/2) 
                 if isinstance(m,(nn.Conv2d)):
-                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3], device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     m.weight.data = ww[:m.weight.size()[0],:,:,:]
                 else:
-                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     m.weight.data = ww[:m.weight.size()[0],:]
             else:
@@ -369,12 +369,12 @@ def init_with_bias_ortho(args, model):
                 dout = math.ceil(m.weight.size()[0]/2)
                 #dbias = math.ceil(m.bias.size()/2)
                 if isinstance(m,(nn.Conv2d)):
-                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3],device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     ww = torch.cat((ww,-ww),dim=1)
                     m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
                 else:
-                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din,device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     ww = torch.cat((ww,-ww),dim=1)
                     m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1]]
@@ -385,7 +385,7 @@ def init_with_bias_ortho(args, model):
             #dbias = math.ceil(m.bias.size()/2) 
             gainProd = gainProd*std
             if m.bias is not None:
-                bb = torch.empty(dout)
+                bb = torch.empty(dout,device=m.bias.device)
                 nn.init.normal_(bb, mean=0.0, std=gainProd)
                 bb = torch.cat((bb,-bb))
                 m.bias.data = bb
@@ -409,11 +409,11 @@ def init_ortho_with_zero_bias(args, model):
                 din = m.weight.size()[1]
                 #dbias = math.ceil(m.bias.size()/2)
                 if isinstance(m,(nn.Conv2d)):
-                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3],device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     m.weight.data = ww[:m.weight.size()[0],:,:,:]
                 else:
-                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din,device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     m.weight.data = ww[:m.weight.size()[0],:]
             else:
@@ -421,12 +421,12 @@ def init_ortho_with_zero_bias(args, model):
                 dout = math.ceil(m.weight.size()[0]/2)
                 #dbias = math.ceil(m.bias.size()/2)
                 if isinstance(m,(nn.Conv2d)):
-                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3], device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     ww = torch.cat((ww,-ww),dim=1)
                     m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1],:,:]
                 else:
-                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din,device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     ww = torch.cat((ww,-ww),dim=1)
                     m.weight.data = ww[:m.weight.size()[0],:m.weight.size()[1]]
@@ -456,11 +456,11 @@ def init_ortho_with_dep_bias(args, model):
                 din = m.weight.size()[1]
                 #dbias = math.ceil(m.bias.size()/2) 
                 if isinstance(m,(nn.Conv2d)):
-                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3],device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     m.weight.data = ww[:m.weight.size()[0],:,:,:]
                 else:
-                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din,device=m.weight.device))
                     ww = torch.cat((ww,-ww),dim=0)
                     m.weight.data = ww[:m.weight.size()[0],:]
             else:
@@ -468,10 +468,10 @@ def init_ortho_with_dep_bias(args, model):
                 dout = math.ceil(m.weight.size()[0]/2)
                 #dbias = math.ceil(m.bias.size()/2)
                 if isinstance(m,(nn.Conv2d)):
-                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3]))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, m.weight.size()[2], m.weight.size()[3],device=m.weight.device))
                     wprev = ww
                 else:
-                    ww = nn.init.orthogonal_(torch.empty(dout, din))
+                    ww = nn.init.orthogonal_(torch.empty(dout, din, device=m.weight.device))
                     wprev = ww
                 if args.scale_fan:
                     wprev = wprev / math.sqrt(args.prune_rate)
@@ -487,7 +487,7 @@ def init_ortho_with_dep_bias(args, model):
                 m.weight.data = m.weight.data / math.sqrt(args.prune_rate)
             gainProd = gainProd*std
             if m.bias is not None:
-                bb = torch.empty(dout)
+                bb = torch.empty(dout,device=m.bias.device)
                 nn.init.normal_(bb, mean=0.0, std=gainProd)
                 if i%2 == 1:
                     bprev = bb
